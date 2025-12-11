@@ -37,14 +37,6 @@
         .content {
             padding: 40px;
         }
-        .api-notice {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
         .form-group {
             margin-bottom: 25px;
         }
@@ -149,6 +141,20 @@
         .result-content p {
             margin-bottom: 15px;
         }
+        .download-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background: #218838;
+        }
         @media (max-width: 600px) {
             .row {
                 grid-template-columns: 1fr;
@@ -160,26 +166,10 @@
     <div class="container">
         <div class="header">
             <h1>🎓 Сабақ жоспары генераторы</h1>
-            <p>ЖИ көмегімен бірнеше секундта сабақ жоспарын құрыңыз</p>
+            <p>DeepSeek AI көмегімен бірнеше секундта сабақ жоспарын құрыңыз</p>
         </div>
         <div class="content">
-            <div class="api-notice">
-                <strong>⚠️ Назар аударыңыз:</strong> Бұл сайт жұмыс істеуі үшін API кілті қажет.
-                <br>Anthropic Claude API: <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
-                <br>OpenAI API: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>
-            </div>
             <form id="lessonForm">
-                <div class="form-group">
-                    <label for="apiProvider">ЖИ провайдері:</label>
-                    <select id="apiProvider" required>
-                        <option value="anthropic">Anthropic Claude</option>
-                        <option value="openai">OpenAI GPT</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="apiKey">API кілті:</label>
-                    <input type="password" id="apiKey" placeholder="sk-ant-... немесе sk-..." required>
-                </div>
                 <div class="row">
                     <div class="form-group">
                         <label for="classLevel">Сынып:</label>
@@ -220,6 +210,10 @@
                     <label for="topic">Сабақ тақырыбы:</label>
                     <textarea id="topic" placeholder="Мысалы: Квадрат теңдеулерді шешу" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="objectives">Оқу мақсаттары (міндетті емес):</label>
+                    <textarea id="objectives" placeholder="Мысалы: 5.1.1.1, 5.2.3.1"></textarea>
+                </div>
                 <button type="submit" class="btn" id="generateBtn">Сабақ жоспарын генерациялау</button>
             </form>
             <div class="loading" id="loading">
@@ -230,43 +224,31 @@
             <div class="result" id="result">
                 <h2>📋 Сабақ жоспары</h2>
                 <div class="result-content" id="resultContent"></div>
+                <button class="download-btn" onclick="downloadPDF()">📥 PDF жүктеу</button>
             </div>
         </div>
     </div>
     <script>
+        // DeepSeek API кілті (серверде сақталуы керек)
+        const DEEPSEEK_API_KEY = 'sk-fe7af9313d814884b58cd49eac0756ca';
+
         const form = document.getElementById('lessonForm');
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
         const resultContent = document.getElementById('resultContent');
         const errorDiv = document.getElementById('error');
         const generateBtn = document.getElementById('generateBtn');
-        const apiKeyInput = document.getElementById('apiKey');
-
-        const savedApiKey = localStorage.getItem('apiKey');
-        if (savedApiKey) {
-            apiKeyInput.value = savedApiKey;
-        }
-
-        apiKeyInput.addEventListener('change', function(e) {
-            localStorage.setItem('apiKey', e.target.value);
-        });
 
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const apiProvider = document.getElementById('apiProvider').value;
-            const apiKey = document.getElementById('apiKey').value;
             const classLevel = document.getElementById('classLevel').value;
             const subject = document.getElementById('subject').value;
             const topic = document.getElementById('topic').value;
-
-            if (!apiKey) {
-                showError('API кілтін енгізіңіз');
-                return;
-            }
+            const objectives = document.getElementById('objectives').value;
 
             if (!classLevel || !subject || !topic) {
-                showError('Барлық өрістерді толтырыңыз');
+                showError('Барлық міндетті өрістерді толтырыңыз');
                 return;
             }
 
@@ -276,99 +258,108 @@
             generateBtn.disabled = true;
 
             try {
-                const lessonPlan = await generateLessonPlan(apiProvider, apiKey, classLevel, subject, topic);
+                const lessonPlan = await generateLessonPlan(classLevel, subject, topic, objectives);
                 resultContent.innerHTML = lessonPlan;
                 result.classList.add('show');
             } catch (error) {
                 console.error('Қате:', error);
-                showError('Қате пайда болды: ' + error.message);
+                showError('Қате пайда болды. Қайталап көріңіз.');
             } finally {
                 loading.classList.remove('show');
                 generateBtn.disabled = false;
             }
         });
 
-        async function generateLessonPlan(provider, apiKey, classLevel, subject, topic) {
-            const prompt = classLevel + ' сыныпқа "' + subject + '" пәнінен "' + topic + '" тақырыбы бойынша қысқаша сабақ жоспарын құр. Сабақ жоспарының құрылымы: <h3>🎯 Сабақтың мақсаты</h3> <p>[Сабақтың мақсаты туралы 1-2 сөйлем]</p> <h3>📚 Мазмұнның негізгі тармақтары</h3> <ul> <li>[1-тармақ]</li> <li>[2-тармақ]</li> <li>[3-тармақ]</li> <li>[4-тармақ]</li> </ul> <h3>💡 Тақырыпты түсіндіру</h3> <p>[' + classLevel + ' сынып деңгейіне бейімделген тақырыпты түсіндіретін 2-3 абзац. Қарапайым тіл мен мысалдарды пайдалан.]</p> <h3>✍️ Практикалық тапсырмалар</h3> <p><strong>1-тапсырма (жеңіл):</strong> [сипаттама]</p> <p><strong>2-тапсырма (орташа):</strong> [сипаттама]</p> <p><strong>3-тапсырма (қиын):</strong> [сипаттама]</p> <h3>✅ Сабақтың қорытындысы</h3> <p>[Оқушылар не үйренуі керектігінің қысқаша қорытындысы]</p> ТЕК жоғарыда көрсетілген HTML тегтерін пайдалан.';
+        async function generateLessonPlan(classLevel, subject, topic, objectives) {
+            const prompt = `Қазақстан білім беру стандарттары бойынша ${classLevel} сыныпқа "${subject}" пәнінен "${topic}" тақырыбы бойынша қысқа мерзімді жоспар (ҚМЖ) құрастыр.
 
-            console.log('Провайдер:', provider);
+${objectives ? 'Оқу мақсаттары: ' + objectives : ''}
+
+ҚМЖ мына құрылымда бол:
+
+<h3>📚 Жалпы мәліметтер</h3>
+<p><strong>Пән:</strong> ${subject}</p>
+<p><strong>Сынып:</strong> ${classLevel}</p>
+<p><strong>Тақырып:</strong> ${topic}</p>
+<p><strong>Күні:</strong> ${new Date().toLocaleDateString('kk-KZ')}</p>
+
+<h3>🎯 Сабақтың мақсаты</h3>
+<p>[Сабақтың негізгі оқу мақсаттары]</p>
+
+<h3>⏰ Сабақ барысы</h3>
+<p><strong>1. Ұйымдастыру кезеңі (5 минут)</strong></p>
+<ul>
+<li>[Сәлемдесу, түгендеу]</li>
+<li>[Сабаққа дайындық]</li>
+</ul>
+
+<p><strong>2. Үй тапсырмасын тексеру (10 минут)</strong></p>
+<ul>
+<li>[Өткен тақырыпты қайталау]</li>
+<li>[Үй тапсырмасын талдау]</li>
+</ul>
+
+<p><strong>3. Жаңа тақырып (15 минут)</strong></p>
+<ul>
+<li>[Жаңа материалды түсіндіру]</li>
+<li>[Мысалдар келтіру]</li>
+</ul>
+
+<p><strong>4. Бекіту жаттығулары (10 минут)</strong></p>
+<ul>
+<li>[Практикалық тапсырмалар]</li>
+</ul>
+
+<p><strong>5. Қорытынды (5 минут)</strong></p>
+<ul>
+<li>[Сабақты қорытындылау]</li>
+<li>[Үй тапсырмасын беру]</li>
+</ul>
+
+<h3>✅ Бағалау критерийлері</h3>
+<ul>
+<li>[1-критерий]</li>
+<li>[2-критерий]</li>
+<li>[3-критерий]</li>
+</ul>
+
+<h3>📖 Қажетті ресурстар</h3>
+<p>[Оқулықтар, көрнекіліктер, т.б.]</p>
+
+ТЕК жоғарыда көрсетілген HTML тегтерін пайдалан. Қазақ тілінде жаз.`;
 
             try {
-                if (provider === 'anthropic') {
-                    console.log('Anthropic API сұрауы...');
-                    
-                    const response = await fetch('https://api.anthropic.com/v1/messages', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-api-key': apiKey,
-                            'anthropic-version': '2023-06-01'
-                        },
-                        body: JSON.stringify({
-                            model: 'claude-3-5-sonnet-20241022',
-                            max_tokens: 2000,
-                            messages: [{
-                                role: 'user',
-                                content: prompt
-                            }]
-                        })
-                    });
+                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
 
-                    console.log('Статус:', response.status);
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('API қатесі:', errorText);
-                        throw new Error('API қатесі (' + response.status + ')');
-                    }
-
-                    const data = await response.json();
-                    console.log('Жауап алынды');
-                    
-                    if (!data.content || !data.content[0]) {
-                        throw new Error('Жауапта мазмұн жоқ');
-                    }
-                    
-                    return data.content[0].text;
-
-                } else if (provider === 'openai') {
-                    console.log('OpenAI API сұрауы...');
-                    
-                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + apiKey
-                        },
-                        body: JSON.stringify({
-                            model: 'gpt-4o-mini',
-                            messages: [{
-                                role: 'user',
-                                content: prompt
-                            }],
-                            max_tokens: 2000
-                        })
-                    });
-
-                    console.log('Статус:', response.status);
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('API қатесі:', errorText);
-                        throw new Error('API қатесі (' + response.status + ')');
-                    }
-
-                    const data = await response.json();
-                    console.log('Жауап алынды');
-                    
-                    if (!data.choices || !data.choices[0]) {
-                        throw new Error('Жауапта мазмұн жоқ');
-                    }
-                    
-                    return data.choices[0].message.content;
+                if (!response.ok) {
+                    throw new Error('API қатесі: ' + response.status);
                 }
+
+                const data = await response.json();
+                
+                if (!data.choices || !data.choices[0]) {
+                    throw new Error('Жауапта мазмұн жоқ');
+                }
+                
+                return data.choices[0].message.content;
+
             } catch (error) {
-                console.error('Генерация қатесі:', error);
+                console.error('DeepSeek API қатесі:', error);
                 throw error;
             }
         }
@@ -380,7 +371,56 @@
                 errorDiv.classList.remove('show');
             }, 5000);
         }
+
+        function downloadPDF() {
+            const classLevel = document.getElementById('classLevel').value;
+            const subject = document.getElementById('subject').value;
+            const topic = document.getElementById('topic').value;
+            const content = resultContent.innerHTML;
+
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Сабақ жоспары</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 40px; 
+                            line-height: 1.8; 
+                        }
+                        h1 { 
+                            text-align: center; 
+                            color: #667eea; 
+                            margin-bottom: 30px;
+                        }
+                        h3 { 
+                            color: #764ba2; 
+                            margin-top: 25px; 
+                            margin-bottom: 15px;
+                        }
+                        p { margin: 10px 0; }
+                        ul { 
+                            margin: 10px 0; 
+                            padding-left: 30px; 
+                        }
+                        li { margin: 5px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>ҚЫСҚА МЕРЗІМДІ ЖОСПАР</h1>
+                    ${content}
+                    <p style="margin-top: 40px; text-align: center; color: #999; font-size: 12px;">
+                        Генерацияланған күні: ${new Date().toLocaleString('kk-KZ')}
+                    </p>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
     </script>
 </body>
 </html>
-
