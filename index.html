@@ -1,0 +1,337 @@
+import React, { useState } from 'react';
+import { FileText, Download, Loader2, BookOpen, Target, Lightbulb } from 'lucide-react';
+
+const LessonPlanGenerator = () => {
+  const [formData, setFormData] = useState({
+    subject: '',
+    grade: '',
+    topic: '',
+    learningObjectives: ''
+  });
+  const [lessonPlan, setLessonPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const subjects = [
+    'Математика', 'Қазақ тілі', 'Орыс тілі', 'Ағылшын тілі',
+    'Физика', 'Химия', 'Биология', 'География', 'Тарих',
+    'Әдебиет', 'Информатика', 'Дене шынықтыру'
+  ];
+
+  const grades = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const generateLessonPlan = async () => {
+    if (!formData.subject || !formData.grade || !formData.topic || !formData.learningObjectives) {
+      setError('Барлық өрістерді толтырыңыз');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const prompt = `Қазақстан Республикасының білім беру стандарттарына сәйкес келесі параметрлер бойынша толық сабақ жоспарын құрастыр:
+
+Пән: ${formData.subject}
+Сынып: ${formData.grade}
+Тақырып: ${formData.topic}
+Оқу мақсаттары: ${formData.learningObjectives}
+
+Сабақ жоспары мына құрылымда болуы керек:
+
+1. КІРІСПЕ (5 минут)
+- Ұйымдастыру кезеңі
+- Оқушылардың назарын сабаққа аудару
+- Өткен материалды еске түсіру
+
+2. САБАҚТЫҢ МАҚСАТТАРЫ
+- Білімділік мақсаты
+- Дамытушылық мақсаты
+- Тәрбиелік мақсаты
+
+3. ӘДІС-ТӘСІЛДЕР
+- Қолданылатын әдістер
+- Оқыту формалары
+- Қажетті құрал-жабдықтар
+
+4. НЕГІЗГІ БӨЛІМ (30 минут)
+- Жаңа материалды түсіндіру
+- Практикалық тапсырмалар
+- Топтық/жұптық жұмыс
+- Оқушылардың белсенділігін арттыру
+
+5. БАҒАЛАУ (5 минут)
+- Формативті бағалау критерийлері
+- Оқушылардың жетістіктерін бағалау әдістері
+- Кері байланыс
+
+6. РЕФЛЕКСИЯ (3 минут)
+- Сабақты қорытындылау
+- Оқушылардың өзін-өзі бағалауы
+- Сабақтан алған әсерлері
+
+7. ҮЙ ТАПСЫРМАСЫ (2 минут)
+- Нақты тапсырма
+- Орындау критерийлері
+- Күтілетін нәтиже
+
+Жоспар қазақ тілінде, нақты, түсінікті және сынып деңгейіне сәйкес болуы керек.`;
+
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer YOUR_DEEPSEEK_API_KEY'
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 3000
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('API сұранысы сәтсіз аяқталды');
+      }
+
+      const data = await response.json();
+      const generatedPlan = data.choices[0].message.content;
+      
+      setLessonPlan({
+        subject: formData.subject,
+        grade: formData.grade,
+        topic: formData.topic,
+        objectives: formData.learningObjectives,
+        content: generatedPlan,
+        date: new Date().toLocaleDateString('kk-KZ')
+      });
+    } catch (err) {
+      setError('Жоспар құру кезінде қате орын алды. API кілтін тексеріңіз.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadPDF = () => {
+    const content = `
+САБАҚ ЖОСПАРЫ
+
+Пән: ${lessonPlan.subject}
+Сынып: ${lessonPlan.grade}
+Тақырып: ${lessonPlan.topic}
+Күні: ${lessonPlan.date}
+
+Оқу мақсаттары:
+${lessonPlan.objectives}
+
+${lessonPlan.content}
+    `;
+
+    const blob = new Blob([content], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sabak_zhospary_${lessonPlan.grade}_synyp.pdf`;
+    a.click();
+  };
+
+  const downloadWord = () => {
+    const content = `
+САБАҚ ЖОСПАРЫ
+
+Пән: ${lessonPlan.subject}
+Сынып: ${lessonPlan.grade}
+Тақырып: ${lessonPlan.topic}
+Күні: ${lessonPlan.date}
+
+Оқу мақсаттары:
+${lessonPlan.objectives}
+
+${lessonPlan.content}
+    `;
+
+    const blob = new Blob([content], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sabak_zhospary_${lessonPlan.grade}_synyp.doc`;
+    a.click();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <BookOpen className="w-12 h-12 text-indigo-600" />
+            <h1 className="text-4xl font-bold text-gray-800">Сабақ жоспары құрастыру</h1>
+          </div>
+          <p className="text-gray-600">ЖИ арқылы автоматты түрде сабақ жоспарын жасаңыз</p>
+        </div>
+
+        {/* Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Пән */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Пән
+              </label>
+              <select
+                name="subject"
+                value={formData.subject}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Пәнді таңдаңыз</option>
+                {subjects.map(subject => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Сынып */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Сынып
+              </label>
+              <select
+                name="grade"
+                value={formData.grade}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Сыныпты таңдаңыз</option>
+                {grades.map(grade => (
+                  <option key={grade} value={grade}>{grade} сынып</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Тақырып */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Сабақтың тақырыбы
+              </label>
+              <input
+                type="text"
+                name="topic"
+                value={formData.topic}
+                onChange={handleInputChange}
+                placeholder="Мысалы: Көбейту кестесі, Қазақстанның табиғаты"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Оқу мақсаттары */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Оқу мақсаттары
+              </label>
+              <textarea
+                name="learningObjectives"
+                value={formData.learningObjectives}
+                onChange={handleInputChange}
+                placeholder="Мысалы: Оқушылар көбейту кестесін меңгереді, есептер шығара алады"
+                rows="4"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={generateLessonPlan}
+            disabled={loading}
+            className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Жоспар құрылуда...
+              </>
+            ) : (
+              <>
+                <Lightbulb className="w-5 h-5" />
+                Сабақ жоспарын құру
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Generated Lesson Plan */}
+        {lessonPlan && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <Target className="w-6 h-6 text-indigo-600" />
+                Дайын сабақ жоспары
+              </h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={downloadPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  PDF
+                </button>
+                <button
+                  onClick={downloadWord}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Word
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-6 mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-semibold text-gray-700">Пән:</span>
+                  <span className="ml-2 text-gray-600">{lessonPlan.subject}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Сынып:</span>
+                  <span className="ml-2 text-gray-600">{lessonPlan.grade}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold text-gray-700">Тақырып:</span>
+                  <span className="ml-2 text-gray-600">{lessonPlan.topic}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="prose max-w-none">
+              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                {lessonPlan.content}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LessonPlanGenerator;
