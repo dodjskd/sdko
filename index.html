@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sabaq zhospary generatory</title>
+    <title>Сабақ жоспары генераторы</title>
     <style>
         * {
             margin: 0;
@@ -165,69 +165,262 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Sabaq zhospary generatory</h1>
-            <p>DeepSeek AI komegimen birneshe sekundta sabaq zhosparyn quryinyz</p>
+            <h1>🎓 Сабақ жоспары генераторы</h1>
+            <p>DeepSeek AI көмегімен бірнеше секундта сабақ жоспарын құрыңыз</p>
         </div>
         <div class="content">
             <form id="lessonForm">
                 <div class="row">
                     <div class="form-group">
-                        <label for="classLevel">Synyp:</label>
+                        <label for="classLevel">Сынып:</label>
                         <select id="classLevel" required>
-                            <option value="">Synypty tandanyz</option>
-                            <option value="1">1 synyp</option>
-                            <option value="2">2 synyp</option>
-                            <option value="3">3 synyp</option>
-                            <option value="4">4 synyp</option>
-                            <option value="5">5 synyp</option>
-                            <option value="6">6 synyp</option>
-                            <option value="7">7 synyp</option>
-                            <option value="8">8 synyp</option>
-                            <option value="9">9 synyp</option>
-                            <option value="10">10 synyp</option>
-                            <option value="11">11 synyp</option>
+                            <option value="">Сыныпты таңдаңыз</option>
+                            <option value="1">1 сынып</option>
+                            <option value="2">2 сынып</option>
+                            <option value="3">3 сынып</option>
+                            <option value="4">4 сынып</option>
+                            <option value="5">5 сынып</option>
+                            <option value="6">6 сынып</option>
+                            <option value="7">7 сынып</option>
+                            <option value="8">8 сынып</option>
+                            <option value="9">9 сынып</option>
+                            <option value="10">10 сынып</option>
+                            <option value="11">11 сынып</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="subject">Pan:</label>
+                        <label for="subject">Пән:</label>
                         <select id="subject" required>
-                            <option value="">Pandi tandanyz</option>
-                            <option value="matematika">Matematika</option>
-                            <option value="qazaq tili">Qazaq tili</option>
-                            <option value="orys tili">Orys tili</option>
-                            <option value="adebiet">Adebiet</option>
-                            <option value="informatika">Informatika</option>
-                            <option value="fizika">Fizika</option>
-                            <option value="himiya">Himiya</option>
-                            <option value="biologiya">Biologiya</option>
-                            <option value="tarih">Tarih</option>
-                            <option value="geografiya">Geografiya</option>
-                            <option value="agylshyn tili">Agylshyn tili</option>
+                            <option value="">Пәнді таңдаңыз</option>
+                            <option value="математика">Математика</option>
+                            <option value="қазақ тілі">Қазақ тілі</option>
+                            <option value="орыс тілі">Орыс тілі</option>
+                            <option value="әдебиет">Әдебиет</option>
+                            <option value="информатика">Информатика</option>
+                            <option value="физика">Физика</option>
+                            <option value="химия">Химия</option>
+                            <option value="биология">Биология</option>
+                            <option value="тарих">Тарих</option>
+                            <option value="география">География</option>
+                            <option value="ағылшын тілі">Ағылшын тілі</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="topic">Sabaq taqyryby:</label>
-                    <textarea id="topic" placeholder="Mysaly: Kvadrat tendeulерdi sheshu" required></textarea>
+                    <label for="topic">Сабақ тақырыбы:</label>
+                    <textarea id="topic" placeholder="Мысалы: Квадрат теңдеулерді шешу" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="objectives">Oqu maqsattary (mindetti emes):</label>
-                    <textarea id="objectives" placeholder="Mysaly: 5.1.1.1, 5.2.3.1"></textarea>
+                    <label for="objectives">Оқу мақсаттары (міндетті емес):</label>
+                    <textarea id="objectives" placeholder="Мысалы: 5.1.1.1, 5.2.3.1"></textarea>
                 </div>
-                <button type="submit" class="btn" id="generateBtn">Sabaq zhosparyn generatsiyalau</button>
+                <button type="submit" class="btn" id="generateBtn">Сабақ жоспарын генерациялау</button>
             </form>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Sabaq zhospary generatsiyalanyp zhatyр...</p>
+                <p>Сабақ жоспары генерацияланып жатыр...</p>
             </div>
             <div class="error" id="error"></div>
             <div class="result" id="result">
-                <h2>Sabaq zhospary</h2>
+                <h2>📋 Сабақ жоспары</h2>
                 <div class="result-content" id="resultContent"></div>
-                <button class="download-btn" onclick="downloadPDF()">PDF zhukteu</button>
+                <button class="download-btn" onclick="downloadPDF()">📥 PDF жүктеу</button>
             </div>
         </div>
     </div>
-    <script src="api/deepseek.js"></script>
+    <script>
+        // DeepSeek API кілті (серверде сақталуы керек)
+        const DEEPSEEK_API_KEY = 'ӨЗ_API_КІЛТІҢІЗДІ_ОСЫНДА_ҚОЙЫҢЫЗ';
+
+        const form = document.getElementById('lessonForm');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const resultContent = document.getElementById('resultContent');
+        const errorDiv = document.getElementById('error');
+        const generateBtn = document.getElementById('generateBtn');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const classLevel = document.getElementById('classLevel').value;
+            const subject = document.getElementById('subject').value;
+            const topic = document.getElementById('topic').value;
+            const objectives = document.getElementById('objectives').value;
+
+            if (!classLevel || !subject || !topic) {
+                showError('Барлық міндетті өрістерді толтырыңыз');
+                return;
+            }
+
+            loading.classList.add('show');
+            result.classList.remove('show');
+            errorDiv.classList.remove('show');
+            generateBtn.disabled = true;
+
+            try {
+                const lessonPlan = await generateLessonPlan(classLevel, subject, topic, objectives);
+                resultContent.innerHTML = lessonPlan;
+                result.classList.add('show');
+            } catch (error) {
+                console.error('Қате:', error);
+                showError('Қате пайда болды. Қайталап көріңіз.');
+            } finally {
+                loading.classList.remove('show');
+                generateBtn.disabled = false;
+            }
+        });
+
+        async function generateLessonPlan(classLevel, subject, topic, objectives) {
+            const prompt = `Қазақстан білім беру стандарттары бойынша ${classLevel} сыныпқа "${subject}" пәнінен "${topic}" тақырыбы бойынша қысқа мерзімді жоспар (ҚМЖ) құрастыр.
+
+${objectives ? 'Оқу мақсаттары: ' + objectives : ''}
+
+ҚМЖ мына құрылымда бол:
+
+<h3>📚 Жалпы мәліметтер</h3>
+<p><strong>Пән:</strong> ${subject}</p>
+<p><strong>Сынып:</strong> ${classLevel}</p>
+<p><strong>Тақырып:</strong> ${topic}</p>
+<p><strong>Күні:</strong> ${new Date().toLocaleDateString('kk-KZ')}</p>
+
+<h3>🎯 Сабақтың мақсаты</h3>
+<p>[Сабақтың негізгі оқу мақсаттары]</p>
+
+<h3>⏰ Сабақ барысы</h3>
+<p><strong>1. Ұйымдастыру кезеңі (5 минут)</strong></p>
+<ul>
+<li>[Сәлемдесу, түгендеу]</li>
+<li>[Сабаққа дайындық]</li>
+</ul>
+
+<p><strong>2. Үй тапсырмасын тексеру (10 минут)</strong></p>
+<ul>
+<li>[Өткен тақырыпты қайталау]</li>
+<li>[Үй тапсырмасын талдау]</li>
+</ul>
+
+<p><strong>3. Жаңа тақырып (15 минут)</strong></p>
+<ul>
+<li>[Жаңа материалды түсіндіру]</li>
+<li>[Мысалдар келтіру]</li>
+</ul>
+
+<p><strong>4. Бекіту жаттығулары (10 минут)</strong></p>
+<ul>
+<li>[Практикалық тапсырмалар]</li>
+</ul>
+
+<p><strong>5. Қорытынды (5 минут)</strong></p>
+<ul>
+<li>[Сабақты қорытындылау]</li>
+<li>[Үй тапсырмасын беру]</li>
+</ul>
+
+<h3>✅ Бағалау критерийлері</h3>
+<ul>
+<li>[1-критерий]</li>
+<li>[2-критерий]</li>
+<li>[3-критерий]</li>
+</ul>
+
+<h3>📖 Қажетті ресурстар</h3>
+<p>[Оқулықтар, көрнекіліктер, т.б.]</p>
+
+ТЕК жоғарыда көрсетілген HTML тегтерін пайдалан. Қазақ тілінде жаз.`;
+
+            try {
+                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API қатесі: ' + response.status);
+                }
+
+                const data = await response.json();
+                
+                if (!data.choices || !data.choices[0]) {
+                    throw new Error('Жауапта мазмұн жоқ');
+                }
+                
+                return data.choices[0].message.content;
+
+            } catch (error) {
+                console.error('DeepSeek API қатесі:', error);
+                throw error;
+            }
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(function() {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function downloadPDF() {
+            const classLevel = document.getElementById('classLevel').value;
+            const subject = document.getElementById('subject').value;
+            const topic = document.getElementById('topic').value;
+            const content = resultContent.innerHTML;
+
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Сабақ жоспары</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 40px; 
+                            line-height: 1.8; 
+                        }
+                        h1 { 
+                            text-align: center; 
+                            color: #667eea; 
+                            margin-bottom: 30px;
+                        }
+                        h3 { 
+                            color: #764ba2; 
+                            margin-top: 25px; 
+                            margin-bottom: 15px;
+                        }
+                        p { margin: 10px 0; }
+                        ul { 
+                            margin: 10px 0; 
+                            padding-left: 30px; 
+                        }
+                        li { margin: 5px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>ҚЫСҚА МЕРЗІМДІ ЖОСПАР</h1>
+                    ${content}
+                    <p style="margin-top: 40px; text-align: center; color: #999; font-size: 12px;">
+                        Генерацияланған күні: ${new Date().toLocaleString('kk-KZ')}
+                    </p>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+    </script>
 </body>
 </html>
