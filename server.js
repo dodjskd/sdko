@@ -12,7 +12,7 @@ app.post('/api/generate', async (req, res) => {
             messages: req.body.messages
         }, {
             headers: {
-                'Authorization': 'Bearer YOUR_API_KEY'
+                'Authorization': 'Bearer sk-079b4ee4f91641d4b8b5477af6bc0f53'
             }
         });
         res.json(response.data);
