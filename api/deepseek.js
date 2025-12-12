@@ -1,6 +1,6 @@
 // DeepSeek API konfiguratsiyasy
 const DEEPSEEK_CONFIG = {
-    apiKey: 'sk-fe7af9313d814884b58cd49eac0756ca', // DeepSeek API kilti
+    apiKey: '', // DeepSeek API kilti
     apiUrl: 'https://api.deepseek.com/v1/chat/completions',
     model: 'deepseek-chat',
     temperature: 0.7,
